@@ -527,7 +527,7 @@ const getMoodFromExpression = (exp) => {
   // ====================== FETCH SONGS FROM BACKEND ======================
   const fetchSongs = async (mood) => {
     try {
-      const recRes = await axios.get("http://localhost:5000/api/recommend-face", {
+      const recRes = await axios.get("/api/recommend-face", {
         params: { mood },
       });
       setRecommendedSongs(recRes.data || []);
@@ -594,7 +594,7 @@ const getMoodFromExpression = (exp) => {
                 <li key={song.songId} className="song-item">
                   <strong>{song.title}</strong> — {song.artist}
                   <div>🎶 Genre: {song.genre} · Mood: {song.mood}</div>
-                  <audio controls src={`http://localhost:5000${song.url}`} className="audio-player" />
+                  <audio controls src={song.url} className="audio-player" />
                 </li>
               ))}
             </ul>
