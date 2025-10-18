@@ -424,7 +424,12 @@ const app = express();
 const port = 5000;
 
 // Middleware
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ 
+  origin: [
+    "http://localhost:5173",  // Local dev
+    "https://melody-mind-wheat.vercel.app"  // Vercel URL
+  ] 
+}));
 app.use(express.json());
 
 // MongoDB Connection
