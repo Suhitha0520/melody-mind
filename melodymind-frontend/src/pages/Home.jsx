@@ -51,7 +51,7 @@ const [uploading, setUploading] = useState(false);
   // ---------- Load Songs ----------
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/songs")
+      .get("/api/songs")
       .then((res) => {
         setSongs(res.data);
         setUploadedSongs(res.data); // update global context
@@ -98,7 +98,7 @@ useEffect(() => {
     try {
       const song = songs[index];
       if (!song?.url) return alert("No URL found for this song");
-      audioRef.current.src = `http://localhost:5000${song.url}`;
+      audioRef.current.src = song.url;
       await audioRef.current.play();
       setIsPlaying(true);
       setCurrentSongIndex(index);
@@ -108,7 +108,7 @@ useEffect(() => {
       setCurrentMood(song.mood);
 
       // Log played song
-      const logRes = await axios.post("http://localhost:5000/api/log-song", {
+      const logRes = await axios.post("/api/log-song", {
         userId: user?.id,
         songId: song.songId,
       });
@@ -161,7 +161,7 @@ useEffect(() => {
   const removeSong = async (songId) => {
     if (!window.confirm("Are you sure you want to remove this song?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/delete-song/${songId}`);
+      await axios.delete(`/api/delete-song/${songId}`);
       setSongs((prev) => prev.filter((s) => s.songId !== songId));
       setUploadedSongs((prev) => prev.filter((s) => s.songId !== songId)); // update global
       if (songs[currentSongIndex]?.songId === songId) {
@@ -280,7 +280,7 @@ useEffect(() => {
   try {
     setUploading(true); // start loading
 
-    const res = await axios.post("http://localhost:5000/api/upload", formData, {
+    const res = await axios.post("/api/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
 
