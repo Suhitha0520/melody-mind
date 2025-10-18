@@ -839,6 +839,21 @@ app.get("/api/genre-trends/:userId", async (req, res) => {
 /* =======================
    SERVER START
 ======================= */
-app.listen(port, () =>
-  console.log(`🚀 Server running on http://localhost:${port}`)
+/* =======================
+   SERVER START
+======================= */
+
+// ⭐ ADD ROOT ROUTE (THIS WAS MISSING!)
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '🎵 MelodyMind Backend is LIVE! 🚀', 
+    status: 'OK',
+    endpoints: ['/api/songs', '/api/signup', '/api/login', '/api/upload']
+  });
+});
+
+// ⭐ FIX PORT FOR RENDER
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => 
+  console.log(`🚀 Server running on port ${PORT}`)
 );
