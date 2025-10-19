@@ -1262,7 +1262,7 @@
 // app.listen(port, () =>
 //   console.log(`🚀 Server running on port ${port}`)
 // );
-require('dotenv').config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
@@ -1276,20 +1276,14 @@ const { spawnSync } = require("child_process");
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Validate MONGO_URI
-const mongoURI = process.env.MONGO_URI;
-if (!mongoURI) {
-  console.error("❌ MONGO_URI not set in environment variables");
-  process.exit(1);
-}
-
 // Middleware
-app.use(cors({ 
-  origin: ["http://localhost:5173", "https://melody-mind-wheat.vercel.app"],
-  methods: ["GET", "POST", "DELETE"],
+app.use("/api", cors({
+  origin: ["http://localhost:5173", "https://melody-mind-delta.vercel.app"],
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-user-id"],
   credentials: true
 }));
+
 app.use(express.json());
 
 // Root Route
@@ -1298,6 +1292,9 @@ app.get("/", (req, res) => {
 });
 
 // MongoDB Connection
+require("dotenv").config();
+const mongoURI = process.env.MONGO_URI;
+
 mongoose.connect(mongoURI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
@@ -1311,13 +1308,13 @@ const userSchema = new mongoose.Schema({
 
 const songSchema = new mongoose.Schema({
   songId: { type: String, unique: true },
-  userId: String, // Added for user-specific filtering
   title: String,
   artist: String,
   mood: String,
   genre: String,
   url: String,
   tempo: Number,
+  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // ✅ Add user association
 });
 
 const userHistorySchema = new mongoose.Schema({
@@ -1348,12 +1345,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Serve uploads/ with explicit CORS
-app.use("/uploads", (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://melody-mind-wheat.vercel.app");
-  res.setHeader("Access-Control-Allow-Methods", "GET");
-  console.log(`Serving file: ${req.path}`); // Debug log
-  express.static(uploadFolder)(req, res, next);
-}, express.static(uploadFolder));
+app.use("/uploads", express.static(uploadFolder, {
+  setHeaders: (res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*"); // Allow all origins for file access
+  }
+}));
 
 /* =======================
    AUTH ENDPOINTS
@@ -1406,8 +1402,8 @@ app.post("/api/login", async (req, res) => {
 app.post("/api/upload", upload.array("songs"), async (req, res) => {
   try {
     const files = req.files;
-    const userId = req.body.userId || req.headers['x-user-id'];
-    if (!userId) return res.status(401).json({ message: "User not authenticated" });
+    const userId = req.body.userId; // ✅ require user ID from frontend
+    if (!userId) return res.status(400).json({ message: "User ID required" });
     if (!files || files.length === 0)
       return res.status(400).json({ message: "No files uploaded" });
 
@@ -1426,24 +1422,14 @@ app.post("/api/upload", upload.array("songs"), async (req, res) => {
           stdio: "pipe"
         });
 
-        // Enhanced Python logging
-        console.log("Python stdout:", pyResult.stdout);
-        console.log("Python stderr:", pyResult.stderr);
-        if (pyResult.status !== 0) {
-          console.error("Python exit code:", pyResult.status);
-        }
-
-        if (pyResult.error) {
-          console.error("SpawnSync error:", pyResult.error);
-        }
-
+        if (pyResult.error) console.error("SpawnSync error:", pyResult.error);
+        if (pyResult.stderr && pyResult.stderr.trim()) console.error("Python stderr:", pyResult.stderr.trim());
         if (pyResult.stdout && pyResult.stdout.trim()) {
           try {
             const parsed = JSON.parse(pyResult.stdout.trim());
             mood = parsed.mood || "Neutral";
             genre = parsed.genre || "Unknown";
             tempo = parsed.tempo || 0;
-
             if (parsed.error) console.warn("Python script returned error:", parsed.error);
           } catch (e) {
             console.error("JSON parse error:", e, "Raw output:", pyResult.stdout);
@@ -1455,16 +1441,16 @@ app.post("/api/upload", upload.array("songs"), async (req, res) => {
         console.error("Python detection error:", e);
       }
 
-      // Save song to MongoDB with userId
+      // Save song to MongoDB with uploadedBy
       const song = new Song({
         songId: `local-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-        userId, // Added
         title: file.originalname.replace(/\.[^/.]+$/, ""),
         artist: "Local File",
         mood,
         genre,
         url: `/uploads/${file.filename}`,
         tempo,
+        uploadedBy: userId, // ✅ associate with user
       });
 
       await song.save();
@@ -1483,9 +1469,10 @@ app.post("/api/upload", upload.array("songs"), async (req, res) => {
 ======================= */
 app.get("/api/songs", async (req, res) => {
   try {
-    const userId = req.query.userId || req.headers['x-user-id'];
-    if (!userId) return res.status(401).json({ message: "User not authenticated" });
-    const songs = await Song.find({ userId }).sort({ _id: -1 });
+    const userId = req.query.userId; // ✅ frontend must send ?userId=...
+    if (!userId) return res.status(400).json({ message: "User ID required" });
+
+    const songs = await Song.find({ uploadedBy: userId }).sort({ _id: -1 }); // ✅ only user's songs
     res.status(200).json(songs);
   } catch (err) {
     console.error("Get songs error:", err);
@@ -1496,15 +1483,13 @@ app.get("/api/songs", async (req, res) => {
 app.delete("/api/delete-song/:songId", async (req, res) => {
   try {
     const { songId } = req.params;
-    const userId = req.headers['x-user-id'];
-    if (!userId) return res.status(401).json({ message: "User not authenticated" });
-    const song = await Song.findOne({ songId, userId });
+    const song = await Song.findOne({ songId });
     if (!song) return res.status(404).json({ message: "Song not found" });
 
-    await Song.deleteOne({ songId, userId });
+    await Song.deleteOne({ songId });
 
     const filePath = path.join(__dirname, song.url);
-    if (await fsPromises.access(filePath).then(() => true).catch(() => false)) {
+    if (await fsPromises.exists(filePath)) {
       await fsPromises.unlink(filePath);
       console.log(`Deleted file: ${filePath}`);
     } else {
@@ -1522,12 +1507,13 @@ app.delete("/api/delete-song/:songId", async (req, res) => {
    FACE MOOD-BASED RECOMMENDATIONS
 ======================= */
 app.get("/api/recommend-face", async (req, res) => {
-  const { mood } = req.query;
-  const userId = req.query.userId || req.headers['x-user-id'];
-  if (!userId) return res.status(401).json({ message: "User not authenticated" });
+  const { mood, userId } = req.query; // ✅ optional filter by user
 
   try {
-    const allSongs = await Song.find({ userId });
+    let allSongs = userId
+      ? await Song.find({ uploadedBy: userId }) // user-specific recommendations
+      : await Song.find({}); // fallback global
+
     if (!allSongs || allSongs.length === 0) return res.json([]);
 
     let filtered = allSongs.filter(
@@ -1574,7 +1560,7 @@ app.post("/api/log-song", async (req, res) => {
     if (!userId || !songId)
       return res.status(400).json({ message: "User ID and Song ID required" });
 
-    const song = await Song.findOne({ songId, userId });
+    const song = await Song.findOne({ songId });
     if (!song) return res.status(404).json({ message: "Song not found" });
 
     let historyEntry = await UserHistory.findOne({ userId, songId });
