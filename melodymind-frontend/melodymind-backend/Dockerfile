@@ -1,8 +1,9 @@
 # Use a Node base image with Python included
 FROM node:18-bullseye
 
-# Install Python 3.8 and pip
-RUN apt-get update && apt-get install -y python3.8 python3-pip ffmpeg
+# Install Python 3.9, pip, and ffmpeg
+RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg && \
+    ln -s /usr/bin/python3 /usr/bin/python
 
 # Set working directory
 WORKDIR /app
