@@ -193,42 +193,60 @@
 //     </div>
 //   );
 // }
-import React, { useEffect, useState } from "react";
-import { FaPlay, FaPause, FaHeart, FaEllipsisH } from "react-icons/fa";
-import { useSong } from "../context/SongContext.jsx";
+import React, { useState, useEffect, useRef } from "react";
+import { FaPlay, FaPause, FaHeart } from "react-icons/fa";
 
-export default function Favorites() {
-  const {
-    songs,
-    favorites,
-    toggleFavorite,
-    playSong,
-    isPlaying,
-    currentSong,
-  } = useSong();
-
-  const [menuOpen, setMenuOpen] = useState(null);
+export default function Favorites({ songs, logAndPlaySong, currentSongIndex, isPlaying, setIsPlaying }) {
+  const [favorites, setFavorites] = useState([]);
   const [favSongs, setFavSongs] = useState([]);
+  const audioRef = useRef(new Audio());
 
-  // Update favorite songs whenever favorites or all songs change
+  // Load favorites from localStorage
   useEffect(() => {
-    setFavSongs(songs.filter((s) => favorites.includes(s.songId)));
-  }, [songs, favorites]);
+    const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
+    setFavorites(favIds);
+    setFavSongs(songs.filter((s) => favIds.includes(s.songId)));
+  }, [songs]);
+
+  // Update favorites on changes
+  useEffect(() => {
+    const handleFavUpdate = () => {
+      const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
+      setFavorites(favIds);
+      setFavSongs(songs.filter((s) => favIds.includes(s.songId)));
+    };
+    window.addEventListener("favoritesUpdated", handleFavUpdate);
+    return () => window.removeEventListener("favoritesUpdated", handleFavUpdate);
+  }, [songs]);
+
+  const toggleFavorite = (songId) => {
+    const updated = favorites.includes(songId)
+      ? favorites.filter((id) => id !== songId)
+      : [...favorites, songId];
+    localStorage.setItem("favorites", JSON.stringify(updated));
+    window.dispatchEvent(new Event("favoritesUpdated"));
+  };
+
+  const playPause = (song, index) => {
+    if (currentSongIndex === index) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } else {
+      logAndPlaySong(index);
+      setIsPlaying(true);
+    }
+  };
 
   return (
-    <div
-      className="favorites-root"
-      style={{
-        backgroundColor: "lavender",
-        color: "#333",
-        minHeight: "100vh",
-        padding: "20px",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h1>Your Favorites</h1>
+    <div style={{ padding: "20px", background: "#E6E6FA", minHeight: "100vh" }}>
+      <h2 style={{ marginBottom: "20px" }}>Your Favorite Songs</h2>
       {favSongs.length === 0 ? (
-        <p>No favorite songs yet!</p>
+        <p>No favorite songs yet.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
           {favSongs.map((song, index) => (
@@ -236,75 +254,38 @@ export default function Favorites() {
               key={song.songId}
               style={{
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "space-between",
+                alignItems: "center",
+                background: "#F8F8FF",
                 padding: "10px",
                 marginBottom: "10px",
-                backgroundColor: "#f9f4ff",
                 borderRadius: "8px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                 <button
+                  onClick={() => playPause(song, index)}
                   style={{
                     border: "none",
-                    background: "transparent",
+                    background: "none",
                     cursor: "pointer",
                     fontSize: "18px",
                   }}
-                  onClick={() => playSong(song)}
                 >
-                  {isPlaying && currentSong?.songId === song.songId ? <FaPause /> : <FaPlay />}
+                  {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
                 </button>
                 <div>
                   <h4 style={{ margin: 0 }}>{song.title}</h4>
-                  <p style={{ margin: 0, fontSize: "0.9rem" }}>{song.artist}</p>
+                  <p style={{ margin: 0, fontSize: "12px" }}>{song.artist}</p>
                 </div>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <FaHeart
-                  style={{
-                    color: favorites.includes(song.songId) ? "red" : "#999",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => toggleFavorite(song.songId)}
-                />
-                <div
-                  style={{ position: "relative", cursor: "pointer" }}
-                  onClick={() => setMenuOpen(menuOpen === index ? null : index)}
-                >
-                  <FaEllipsisH />
-                  {menuOpen === index && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "20px",
-                        right: 0,
-                        background: "#fff",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px",
-                        boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-                        zIndex: 10,
-                      }}
-                    >
-                      <button
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => {
-                          alert("Remove feature can be added here if needed");
-                        }}
-                      >
-                        🗑 Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <FaHeart
+                onClick={() => toggleFavorite(song.songId)}
+                style={{
+                  color: favorites.includes(song.songId) ? "red" : "grey",
+                  cursor: "pointer",
+                }}
+              />
             </li>
           ))}
         </ul>
