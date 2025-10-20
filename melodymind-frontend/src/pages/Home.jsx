@@ -46,7 +46,7 @@ export default function Home({ user }) {
   const [showUploadPopup, setShowUploadPopup] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE = "https://melody-mind-5wqf.onrender.com"; // ✅ Render backend
+  const API_BASE = "https://melody-mind-2.onrender.com"; // ✅ Render backend
 
   // ---------- Load Songs ---------- 
   useEffect(() => {
