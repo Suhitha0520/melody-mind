@@ -58,43 +58,36 @@
 //     </div>
 //   );
 // }
-import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useRef } from "react";
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaHeart } from "react-icons/fa";
 
-export default function Favorites({ user }) {
-  const [songs, setSongs] = useState([]);
+export default function Favorites() {
   const [favorites, setFavorites] = useState(
     JSON.parse(localStorage.getItem("favorites") || "[]")
   );
+  const [songs, setSongs] = useState([]);
   const [currentSongIndex, setCurrentSongIndex] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(new Audio());
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const API_BASE = "https://melody-mind-2.onrender.com";
-
-  // Fetch all songs for this user
+  // Load all songs from localStorage (or get from parent if you pass props)
   useEffect(() => {
-    if (!user?.id) return;
-    axios
-      .get(`${API_BASE}/api/songs`, { params: { userId: user.id } })
-      .then((res) => setSongs(res.data))
-      .catch((err) => console.error("Fetch songs error:", err));
-  }, [user]);
+    const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
+    setSongs(allSongs);
+  }, []);
 
-  // Listen for favorites changes
+  // Listen for favorites updates
   useEffect(() => {
     const handleUpdate = () => {
-      const updatedFavs = JSON.parse(localStorage.getItem("favorites") || "[]");
-      setFavorites(updatedFavs);
+      setFavorites(JSON.parse(localStorage.getItem("favorites") || "[]"));
     };
     window.addEventListener("favoritesUpdated", handleUpdate);
     return () => window.removeEventListener("favoritesUpdated", handleUpdate);
   }, []);
 
-  // Audio progress
+  // Audio time updates
   useEffect(() => {
     const audio = audioRef.current;
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -111,11 +104,10 @@ export default function Favorites({ user }) {
 
   const favoriteSongs = songs.filter((s) => favorites.includes(s.songId));
 
-  const logAndPlaySong = async (index) => {
+  const playSong = async (index) => {
     const song = favoriteSongs[index];
-    if (!song?.url) return alert("No URL found for this song");
-    audioRef.current.pause();
-    audioRef.current.src = `${API_BASE}${song.url}`;
+    if (!song?.url) return;
+    audioRef.current.src = song.url;
     await audioRef.current.play();
     setIsPlaying(true);
     setCurrentSongIndex(index);
@@ -127,18 +119,16 @@ export default function Favorites({ user }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((err) => console.error("Play error:", err));
+      audioRef.current.play().then(() => setIsPlaying(true));
     }
   };
 
   const nextSong = () => {
-    if (currentSongIndex < favoriteSongs.length - 1) logAndPlaySong(currentSongIndex + 1);
+    if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
   };
+
   const previousSong = () => {
-    if (currentSongIndex > 0) logAndPlaySong(currentSongIndex - 1);
+    if (currentSongIndex > 0) playSong(currentSongIndex - 1);
   };
 
   return (
@@ -154,16 +144,11 @@ export default function Favorites({ user }) {
                   <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={() => logAndPlaySong(index)}>
+                  <button onClick={() => playSong(index)}>
                     {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
                   </button>
                   <FaHeart
                     style={{ cursor: "pointer", color: "red" }}
-                    onClick={() => {
-                      const updated = favorites.filter((id) => id !== song.songId);
-                      localStorage.setItem("favorites", JSON.stringify(updated));
-                      setFavorites(updated);
-                    }}
                   />
                 </div>
               </div>
@@ -180,11 +165,12 @@ export default function Favorites({ user }) {
             <h4>{favoriteSongs[currentSongIndex].title}</h4>
             <p>{favoriteSongs[currentSongIndex].artist}</p>
           </div>
+
           <div className="progress-container">
             <div
               className="progress-fill"
               style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-            />
+            ></div>
             <input
               type="range"
               min="0"
@@ -196,6 +182,7 @@ export default function Favorites({ user }) {
               }}
             />
           </div>
+
           <div className="playerbar-controls">
             <button onClick={previousSong}><FaStepBackward /></button>
             <button onClick={playPause}>{isPlaying ? <FaPause /> : <FaPlay />}</button>
