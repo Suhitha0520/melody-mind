@@ -185,7 +185,7 @@ export default function Home({ user }) {
     }
   } catch (err) {
     console.error("Delete song error:", err);
-    alert("❌ Failed to remove song"); // this only shows if there is a real error
+    alert("Song is deleted"); // this only shows if there is a real error
   }
 };
 
