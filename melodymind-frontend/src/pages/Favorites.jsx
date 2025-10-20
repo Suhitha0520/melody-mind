@@ -249,12 +249,13 @@ export default function Favorites() {
   };
 
   const playPause = () => {
-    if (!audioRef.current.src) return;
+    const audio = audioRef.current;
+    if (!audio.src) return;
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true));
+      audio.play().then(() => setIsPlaying(true));
     }
   };
 
@@ -264,6 +265,20 @@ export default function Favorites() {
 
   const previousSong = () => {
     if (currentSongIndex > 0) playSong(currentSongIndex - 1);
+  };
+
+  // NEW: Unfavorite function
+  const removeFavorite = (songId) => {
+    const updatedFavorites = favorites.filter(id => id !== songId);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    window.dispatchEvent(new Event("favoritesUpdated"));
+    // Reset player if current song was unfavorited
+    if (currentSongIndex !== null && favoriteSongs[currentSongIndex]?.songId === songId) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      setCurrentSongIndex(null);
+      setCurrentTime(0);
+    }
   };
 
   return (
@@ -278,12 +293,13 @@ export default function Favorites() {
                   <h4>{song.title}</h4>
                   <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
                 </div>
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <button onClick={() => playSong(index)}>
                     {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
                   </button>
                   <FaHeart
                     style={{ cursor: "pointer", color: "red" }}
+                    onClick={() => removeFavorite(song.songId)}
                   />
                 </div>
               </div>
