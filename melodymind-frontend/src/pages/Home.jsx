@@ -168,27 +168,23 @@ export default function Home({ user }) {
 
   // ---------- Remove Song ----------
   const removeSong = async (songId) => {
-  if (!window.confirm("Are you sure you want to remove this song?")) return;
-
-  try {
-    await axios.delete(`${API_BASE}/api/delete-song/${songId}`, {
-      data: { userId: user?.id }, // ensure backend expects this
-    });
-
-    setSongs((prev) => prev.filter((s) => s.songId !== songId));
-    setUploadedSongs((prev) => prev.filter((s) => s.songId !== songId));
-
-    if (songs[currentSongIndex]?.songId === songId) {
-      audioRef.current.pause();
-      setCurrentSongIndex(null);
-      setIsPlaying(false);
+    if (!window.confirm("Are you sure you want to remove this song?")) return;
+    try {
+      await axios.delete(`${API_BASE}/api/delete-song/${songId}`, {
+        data: { userId: user?.id },
+      });
+      setSongs((prev) => prev.filter((s) => s.songId !== songId));
+      setUploadedSongs((prev) => prev.filter((s) => s.songId !== songId));
+      if (songs[currentSongIndex]?.songId === songId) {
+        audioRef.current.pause();
+        setCurrentSongIndex(null);
+        setIsPlaying(false);
+      }
+    } catch (err) {
+      console.error("Delete song error:", err);
+      alert("❌ Failed to remove song");
     }
-  } catch (err) {
-    console.error("Delete song error:", err);
-    alert("Song is deleted"); // this only shows if there is a real error
-  }
-};
-
+  };
 
   // ---------- Favorites / Queue / Shuffle ----------
  const toggleFavorite = (songId) => {
@@ -316,6 +312,7 @@ export default function Home({ user }) {
       setUploading(false);
     }
   };
+
 
 
   // ---------- Render ----------
