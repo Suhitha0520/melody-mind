@@ -59,6 +59,12 @@ export default function Home({ user }) {
       })
       .catch((err) => console.error("Fetch songs error:", err));
   }, [user, setUploadedSongs]);
+  useEffect(() => {
+  if (songs.length) {
+    localStorage.setItem("allSongs", JSON.stringify(songs));
+  }
+  }, [songs]);
+
 
   // ---------- Audio Progress ----------
   useEffect(() => {
