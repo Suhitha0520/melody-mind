@@ -193,103 +193,68 @@
 //     </div>
 //   );
 // }
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
+import { useSong } from "../context/SongContext";
 import { FaPlay, FaPause, FaHeart } from "react-icons/fa";
 
-export default function Favorites({ songs, logAndPlaySong, currentSongIndex, isPlaying, setIsPlaying }) {
+export default function Favorites() {
+  const { uploadedSongs, setCurrentSong, setCurrentMood } = useSong();
   const [favorites, setFavorites] = useState([]);
-  const [favSongs, setFavSongs] = useState([]);
-  const audioRef = useRef(new Audio());
+  const [currentIndex, setCurrentIndex] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = React.useRef(new Audio());
 
-  // Load favorites from localStorage
+  // Load favorites from localStorage or backend
   useEffect(() => {
     const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
-    setFavorites(favIds);
-    setFavSongs(songs.filter((s) => favIds.includes(s.songId)));
-  }, [songs]);
+    const favSongs = uploadedSongs.filter((s) => favIds.includes(s.songId));
+    setFavorites(favSongs);
+  }, [uploadedSongs]);
 
-  // Update favorites on changes
+  // Listen to updates when toggled in Home
   useEffect(() => {
-    const handleFavUpdate = () => {
+    const handler = () => {
       const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
-      setFavorites(favIds);
-      setFavSongs(songs.filter((s) => favIds.includes(s.songId)));
+      const favSongs = uploadedSongs.filter((s) => favIds.includes(s.songId));
+      setFavorites(favSongs);
     };
-    window.addEventListener("favoritesUpdated", handleFavUpdate);
-    return () => window.removeEventListener("favoritesUpdated", handleFavUpdate);
-  }, [songs]);
+    window.addEventListener("favoritesUpdated", handler);
+    return () => window.removeEventListener("favoritesUpdated", handler);
+  }, [uploadedSongs]);
 
-  const toggleFavorite = (songId) => {
-    const updated = favorites.includes(songId)
-      ? favorites.filter((id) => id !== songId)
-      : [...favorites, songId];
-    localStorage.setItem("favorites", JSON.stringify(updated));
-    window.dispatchEvent(new Event("favoritesUpdated"));
-  };
-
-  const playPause = (song, index) => {
-    if (currentSongIndex === index) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
-    } else {
-      logAndPlaySong(index);
-      setIsPlaying(true);
-    }
+  const playSong = (index) => {
+    const song = favorites[index];
+    if (!song?.url) return alert("No URL found for this song");
+    audioRef.current.src = `${song.url.startsWith("http") ? "" : "https://melody-mind-2.onrender.com"}${song.url}`;
+    audioRef.current.play();
+    setIsPlaying(true);
+    setCurrentIndex(index);
+    setCurrentSong(song);
+    setCurrentMood(song.mood);
   };
 
   return (
-    <div style={{ padding: "20px", background: "#E6E6FA", minHeight: "100vh" }}>
-      <h2 style={{ marginBottom: "20px" }}>Your Favorite Songs</h2>
-      {favSongs.length === 0 ? (
-        <p>No favorite songs yet.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {favSongs.map((song, index) => (
-            <li
-              key={song.songId}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                background: "#F8F8FF",
-                padding: "10px",
-                marginBottom: "10px",
-                borderRadius: "8px",
+    <div>
+      <h2>❤ Your Favorites</h2>
+      {favorites.length === 0 && <p>No favorite songs yet.</p>}
+      <ul>
+        {favorites.map((song, idx) => (
+          <li key={song.songId}>
+            <button onClick={() => playSong(idx)}>
+              {isPlaying && currentIndex === idx ? <FaPause /> : <FaPlay />}
+            </button>
+            {song.title} ({song.artist})
+            <FaHeart
+              onClick={() => {
+                let favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
+                favIds = favIds.filter((id) => id !== song.songId);
+                localStorage.setItem("favorites", JSON.stringify(favIds));
+                window.dispatchEvent(new Event("favoritesUpdated"));
               }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                <button
-                  onClick={() => playPause(song, index)}
-                  style={{
-                    border: "none",
-                    background: "none",
-                    cursor: "pointer",
-                    fontSize: "18px",
-                  }}
-                >
-                  {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
-                </button>
-                <div>
-                  <h4 style={{ margin: 0 }}>{song.title}</h4>
-                  <p style={{ margin: 0, fontSize: "12px" }}>{song.artist}</p>
-                </div>
-              </div>
-              <FaHeart
-                onClick={() => toggleFavorite(song.songId)}
-                style={{
-                  color: favorites.includes(song.songId) ? "red" : "grey",
-                  cursor: "pointer",
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+            />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
