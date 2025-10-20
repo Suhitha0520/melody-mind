@@ -194,24 +194,21 @@
 //   );
 // }
 import React, { useState, useEffect } from "react";
-import { useSong } from "../context/SongContext";
+import { useSong } from "../context/SongContext.jsx";
 import { FaPlay, FaPause, FaHeart } from "react-icons/fa";
 
 export default function Favorites() {
-  const { uploadedSongs, setCurrentSong, setCurrentMood } = useSong();
+  const { uploadedSongs, currentSong, setCurrentSong, setCurrentMood, audioRef, isPlaying, setIsPlaying } = useSong();
   const [favorites, setFavorites] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = React.useRef(new Audio());
 
-  // Load favorites from localStorage or backend
+  // Load favorites
   useEffect(() => {
     const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
     const favSongs = uploadedSongs.filter((s) => favIds.includes(s.songId));
     setFavorites(favSongs);
   }, [uploadedSongs]);
 
-  // Listen to updates when toggled in Home
+  // Update favorites on toggle
   useEffect(() => {
     const handler = () => {
       const favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
@@ -222,29 +219,65 @@ export default function Favorites() {
     return () => window.removeEventListener("favoritesUpdated", handler);
   }, [uploadedSongs]);
 
-  const playSong = (index) => {
-    const song = favorites[index];
-    if (!song?.url) return alert("No URL found for this song");
+  const playSong = (song) => {
+    if (!song?.url) return alert("No URL found");
     audioRef.current.src = `${song.url.startsWith("http") ? "" : "https://melody-mind-2.onrender.com"}${song.url}`;
     audioRef.current.play();
-    setIsPlaying(true);
-    setCurrentIndex(index);
     setCurrentSong(song);
     setCurrentMood(song.mood);
+    setIsPlaying(true);
   };
 
   return (
-    <div>
+    <div className="favorites-root">
+      <style>{`
+        .favorites-root {
+          padding: 20px;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+        .favorites-root h2 {
+          margin-bottom: 20px;
+        }
+        .favorites-list {
+          list-style: none;
+          padding: 0;
+        }
+        .favorite-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #1e1e1e;
+          padding: 12px 16px;
+          margin-bottom: 8px;
+          border-radius: 8px;
+          color: white;
+        }
+        .favorite-item button {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 18px;
+          margin-right: 10px;
+          cursor: pointer;
+        }
+        .heart-icon {
+          cursor: pointer;
+          color: #f44336;
+        }
+      `}</style>
+
       <h2>❤ Your Favorites</h2>
       {favorites.length === 0 && <p>No favorite songs yet.</p>}
-      <ul>
-        {favorites.map((song, idx) => (
-          <li key={song.songId}>
-            <button onClick={() => playSong(idx)}>
-              {isPlaying && currentIndex === idx ? <FaPause /> : <FaPlay />}
+      <ul className="favorites-list">
+        {favorites.map((song) => (
+          <li key={song.songId} className="favorite-item">
+            <button onClick={() => playSong(song)}>
+              {isPlaying && currentSong?.songId === song.songId ? <FaPause /> : <FaPlay />}
             </button>
             {song.title} ({song.artist})
             <FaHeart
+              className="heart-icon favorited"
               onClick={() => {
                 let favIds = JSON.parse(localStorage.getItem("favorites") || "[]");
                 favIds = favIds.filter((id) => id !== song.songId);
