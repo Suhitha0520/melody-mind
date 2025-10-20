@@ -221,11 +221,19 @@ export default function Favorites() {
 
   const playSong = (song) => {
     if (!song?.url) return alert("No URL found");
-    audioRef.current.src = `${song.url.startsWith("http") ? "" : "https://melody-mind-2.onrender.com"}${song.url}`;
-    audioRef.current.play();
-    setCurrentSong(song);
-    setCurrentMood(song.mood);
-    setIsPlaying(true);
+    // Use same backend path as Home.jsx
+    const url = song.url.startsWith("http")
+      ? song.url
+      : `https://melody-mind-2.onrender.com${song.url}`;
+    audioRef.current.src = url;
+    audioRef.current
+      .play()
+      .then(() => {
+        setCurrentSong(song);
+        setCurrentMood(song.mood);
+        setIsPlaying(true);
+      })
+      .catch((err) => console.error("Play song error:", err));
   };
 
   return (
@@ -235,9 +243,13 @@ export default function Favorites() {
           padding: 20px;
           max-width: 800px;
           margin: 0 auto;
+          background: #f9f9f9;
+          color: #333;
+          border-radius: 12px;
         }
         .favorites-root h2 {
           margin-bottom: 20px;
+          color: #444;
         }
         .favorites-list {
           list-style: none;
@@ -247,16 +259,16 @@ export default function Favorites() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: #1e1e1e;
+          background: #fff;
           padding: 12px 16px;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
           border-radius: 8px;
-          color: white;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .favorite-item button {
           background: none;
           border: none;
-          color: white;
+          color: #007bff;
           font-size: 18px;
           margin-right: 10px;
           cursor: pointer;
@@ -264,6 +276,7 @@ export default function Favorites() {
         .heart-icon {
           cursor: pointer;
           color: #f44336;
+          font-size: 18px;
         }
       `}</style>
 
@@ -275,7 +288,7 @@ export default function Favorites() {
             <button onClick={() => playSong(song)}>
               {isPlaying && currentSong?.songId === song.songId ? <FaPause /> : <FaPlay />}
             </button>
-            {song.title} ({song.artist})
+            <span>{song.title} ({song.artist})</span>
             <FaHeart
               className="heart-icon favorited"
               onClick={() => {
