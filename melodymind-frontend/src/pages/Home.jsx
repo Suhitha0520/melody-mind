@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -46,17 +44,18 @@ export default function Home({ user }) {
   const [showUploadPopup, setShowUploadPopup] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE = "https://melody-mind-2.onrender.com"; // ✅ Render backend
+  const API_BASE = "https://melody-mind-2.onrender.com"; // Render backend
 
   // ---------- Load Songs ---------- 
   useEffect(() => {
     if (!user?.id) return; // wait for user
 
     axios
-      .get(`${API_BASE}/api/songs`, { params: { userId: user.id } }) // send userId
+      .get(`${API_BASE}/api/songs`, { params: { userId: user.id } })
       .then((res) => {
-        setSongs(res.data);
-        setUploadedSongs(res.data);
+        const loaded = res.data.map((s, i) => ({ ...s, songId: s.songId || Date.now() + i }));
+        setSongs(loaded);
+        setUploadedSongs(loaded);
       })
       .catch((err) => console.error("Fetch songs error:", err));
   }, [user, setUploadedSongs]);
@@ -74,7 +73,6 @@ export default function Home({ user }) {
     };
 
     audio.addEventListener("timeupdate", updateProgress);
-
     return () => {
       audio.removeEventListener("timeupdate", updateProgress);
     };
@@ -167,7 +165,7 @@ export default function Home({ user }) {
     if (!window.confirm("Are you sure you want to remove this song?")) return;
     try {
       await axios.delete(`${API_BASE}/api/delete-song/${songId}`, {
-        data: { userId: user?.id }, // ✅ send userId in delete request
+        data: { userId: user?.id },
       });
       setSongs((prev) => prev.filter((s) => s.songId !== songId));
       setUploadedSongs((prev) => prev.filter((s) => s.songId !== songId));
@@ -183,20 +181,16 @@ export default function Home({ user }) {
   };
 
   // ---------- Favorites / Queue / Shuffle ----------
-  const toggleFavorite = (songId) => {
-  setFavorites((prev) => {
-    const updated = prev.includes(songId)
-      ? prev.filter((id) => id !== songId)
-      : [...prev, songId];
-    localStorage.setItem("favorites", JSON.stringify(updated));
-
-    // ✅ Dispatch a custom event to notify other components
-    window.dispatchEvent(new Event("favoritesUpdated"));
-
-    return updated;
-  });
-};
-
+  const toggleFavorite = (songKey) => {
+    setFavorites((prev) => {
+      const updated = prev.includes(songKey)
+        ? prev.filter((id) => id !== songKey)
+        : [...prev, songKey];
+      localStorage.setItem("favorites", JSON.stringify(updated));
+      window.dispatchEvent(new Event("favoritesUpdated"));
+      return updated;
+    });
+  };
 
   const addToQueue = (songId) => {
     const index = songs.findIndex((song) => song.songId === songId);
@@ -253,6 +247,7 @@ export default function Home({ user }) {
       }
 
       if (raw.startsWith("play")) {
+        if (!songs.length) return alert("Songs not loaded yet");
         const query = raw.replace(/^play\s+/, "").trim();
         if (!query) {
           audioRef.current.play();
@@ -261,8 +256,8 @@ export default function Home({ user }) {
         }
         const words = query.split(/\s+/);
         const idx = songs.findIndex((s) => {
-          const haystack = `${s.title} ${s.artist}`.toLowerCase();
-          return words.every((w) => haystack.includes(w));
+          const haystack = `${s.title || ""} ${s.artist || ""}`.toLowerCase();
+          return words.some((w) => haystack.includes(w)); // partial match
         });
         if (idx !== -1) return logAndPlaySong(idx);
         alert(`❌ No results for "${query}"`);
@@ -285,8 +280,7 @@ export default function Home({ user }) {
   const handleUpload = async (e) => {
     const formData = new FormData();
     for (let file of e.target.files) formData.append("songs", file);
-
-    formData.append("userId", user?.id); // ✅ add userId
+    formData.append("userId", user?.id);
 
     try {
       setUploading(true);
@@ -294,8 +288,9 @@ export default function Home({ user }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setSongs((prev) => [...res.data, ...prev]);
-      setUploadedSongs((prev) => [...res.data, ...prev]);
+      const uploaded = res.data.map((s, i) => ({ ...s, songId: s.songId || Date.now() + i }));
+      setSongs((prev) => [...uploaded, ...prev]);
+      setUploadedSongs((prev) => [...uploaded, ...prev]);
 
       setShowUploadPopup(true);
       setTimeout(() => setShowUploadPopup(false), 3000);
