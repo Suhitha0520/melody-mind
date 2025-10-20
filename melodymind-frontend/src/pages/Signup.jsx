@@ -51,6 +51,8 @@ export default function Signup({ onSignup }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
+  const API_BASE = "https://melody-mind-2.onrender.com";
+
 
   const submit = async (e) => {
     e.preventDefault();
@@ -58,7 +60,7 @@ export default function Signup({ onSignup }) {
     if (!name || !email || !password) return setErr('All fields required');
 
     try {
-      const response = await axios.post('/api/signup', {
+      const response = await axios.post(`${API_BASE}/api/signup`, {
         name,
         email,
         password,
