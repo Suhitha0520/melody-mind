@@ -181,16 +181,21 @@ export default function Home({ user }) {
   };
 
   // ---------- Favorites / Queue / Shuffle ----------
-  const toggleFavorite = (songKey) => {
-    setFavorites((prev) => {
-      const updated = prev.includes(songKey)
-        ? prev.filter((id) => id !== songKey)
-        : [...prev, songKey];
-      localStorage.setItem("favorites", JSON.stringify(updated));
-      window.dispatchEvent(new Event("favoritesUpdated"));
-      return updated;
-    });
-  };
+ const toggleFavorite = (songId) => {
+  setFavorites((prev) => {
+    const updated = prev.includes(songId)
+      ? prev.filter((id) => id !== songId)
+      : [...prev, songId];
+
+    localStorage.setItem("favorites", JSON.stringify(updated));
+
+    // Dispatch event so Favorites.jsx updates immediately
+    window.dispatchEvent(new Event("favoritesUpdated"));
+
+    return updated;
+  });
+};
+
 
   const addToQueue = (songId) => {
     const index = songs.findIndex((song) => song.songId === songId);
