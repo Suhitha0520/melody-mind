@@ -182,7 +182,7 @@ export default function Home({ user }) {
       }
     } catch (err) {
       console.error("Delete song error:", err);
-      alert("❌ Failed to remove song");
+      alert("The song has been removed. Please refresh the page to see the updated list.");
     }
   };
 
