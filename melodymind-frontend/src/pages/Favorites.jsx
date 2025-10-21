@@ -2,195 +2,36 @@
 // import React, { useState, useEffect, useRef } from "react";
 // import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaHeart } from "react-icons/fa";
 // import { useSong } from "../context/SongContext.jsx";
+// import "./Favorites.css"; // add gradient cards, hover, scroll styles
 
 // export default function Favorites() {
-//   const { uploadedSongs } = useSong(); // Use SongContext to get songs
+//   const { uploadedSongs, setCurrentSong, setCurrentMood } = useSong();
 //   const [favorites, setFavorites] = useState(
 //     JSON.parse(localStorage.getItem("favorites") || "[]")
 //   );
 //   const [songs, setSongs] = useState([]);
 //   const [currentSongIndex, setCurrentSongIndex] = useState(null);
 //   const [isPlaying, setIsPlaying] = useState(false);
-//   const audioRef = useRef(new Audio());
 //   const [currentTime, setCurrentTime] = useState(0);
 //   const [duration, setDuration] = useState(0);
-
-//   const API_BASE = "https://melody-mind-2.onrender.com"; // Added to match Home.jsx
-
-//   // Load songs from SongContext instead of localStorage
-//   useEffect(() => {
-//     if (uploadedSongs.length > 0) {
-//       setSongs(uploadedSongs);
-//     } else {
-//       // Fallback to localStorage if context is empty
-//       const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
-//       setSongs(allSongs);
-//     }
-//   }, [uploadedSongs]);
-
-//   // Listen for favorites updates
-//   useEffect(() => {
-//     const handleUpdate = () => {
-//       setFavorites(JSON.parse(localStorage.getItem("favorites") || "[]"));
-//     };
-//     window.addEventListener("favoritesUpdated", handleUpdate);
-//     return () => window.removeEventListener("favoritesUpdated", handleUpdate);
-//   }, []);
-
-//   // Audio time updates
-//   useEffect(() => {
-//     const audio = audioRef.current;
-//     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
-//     const onLoadedMetadata = () => setDuration(audio.duration);
-
-//     audio.addEventListener("timeupdate", onTimeUpdate);
-//     audio.addEventListener("loadedmetadata", onLoadedMetadata);
-
-//     return () => {
-//       audio.removeEventListener("timeupdate", onTimeUpdate);
-//       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
-//     };
-//   }, []);
-
-//   const favoriteSongs = songs.filter((s) => favorites.includes(s.songId));
-
-//   const playSong = async (index) => {
-//     const song = favoriteSongs[index];
-//     if (!song?.url) return;
-//     audioRef.current.src = `${API_BASE}${song.url}`; // Prefix URL with API_BASE
-//     try {
-//       await audioRef.current.play();
-//       setIsPlaying(true);
-//       setCurrentSongIndex(index);
-//     } catch (err) {
-//       console.error("Play song error:", err);
-//     }
-//   };
-
-//   const playPause = () => {
-//     const audio = audioRef.current;
-//     if (!audio.src) return;
-//     if (isPlaying) {
-//       audio.pause();
-//       setIsPlaying(false);
-//     } else {
-//       audio.play().then(() => setIsPlaying(true)).catch((err) => console.error("Play error:", err));
-//     }
-//   };
-
-//   const nextSong = () => {
-//     if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
-//   };
-
-//   const previousSong = () => {
-//     if (currentSongIndex > 0) playSong(currentSongIndex - 1);
-//   };
-
-//   const removeFavorite = (songId) => {
-//     const updatedFavorites = favorites.filter((id) => id !== songId);
-//     localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
-//     window.dispatchEvent(new Event("favoritesUpdated"));
-//     // Reset player if current song was unfavorited
-//     if (currentSongIndex !== null && favoriteSongs[currentSongIndex]?.songId === songId) {
-//       audioRef.current.pause();
-//       setIsPlaying(false);
-//       setCurrentSongIndex(null);
-//       setCurrentTime(0);
-//     }
-//   };
-
-//   return (
-//     <div className="favorites-content">
-//       <h2>❤ Your Favorites</h2>
-//       {favoriteSongs.length > 0 ? (
-//         <ul className="song-list">
-//           {favoriteSongs.map((song, index) => (
-//             <li key={song.songId} className="song-item">
-//               <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-//                 <div>
-//                   <h4>{song.title}</h4>
-//                   <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
-//                 </div>
-//                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-//                   <button onClick={() => playSong(index)}>
-//                     {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
-//                   </button>
-//                   <FaHeart
-//                     style={{ cursor: "pointer", color: "red" }}
-//                     onClick={() => removeFavorite(song.songId)}
-//                   />
-//                 </div>
-//               </div>
-//             </li>
-//           ))}
-//         </ul>
-//       ) : (
-//         <p>No favorite songs yet.</p>
-//       )}
-
-//       {currentSongIndex !== null && (
-//         <div className="playerbar">
-//           <div className="playerbar-info">
-//             <h4>{favoriteSongs[currentSongIndex].title}</h4>
-//             <p>{favoriteSongs[currentSongIndex].artist}</p>
-//           </div>
-
-//           <div className="progress-container">
-//             <div
-//               className="progress-fill"
-//               style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-//             ></div>
-//             <input
-//               type="range"
-//               min="0"
-//               max={duration || 0}
-//               value={currentTime}
-//               onChange={(e) => {
-//                 audioRef.current.currentTime = e.target.value;
-//                 setCurrentTime(e.target.value);
-//               }}
-//             />
-//           </div>
-
-//           <div className="playerbar-controls">
-//             <button onClick={previousSong}><FaStepBackward /></button>
-//             <button onClick={playPause}>{isPlaying ? <FaPause /> : <FaPlay />}</button>
-//             <button onClick={nextSong}><FaStepForward /></button>
-//           </div>
-//         </div>
-//       )}
-//     </div>
+//   const [notes, setNotes] = useState(
+//     JSON.parse(localStorage.getItem("favoriteNotes") || "{}")
 //   );
-// }
-// import React, { useState, useEffect, useRef } from "react";
-// import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaHeart } from "react-icons/fa";
-// import { useSong } from "../context/SongContext.jsx";
+//   const [bgColor, setBgColor] = useState("#f2f2f2");
 
-// export default function Favorites() {
-//   const { uploadedSongs } = useSong();
-//   const [favorites, setFavorites] = useState(
-//     JSON.parse(localStorage.getItem("favorites") || "[]")
-//   );
-//   const [songs, setSongs] = useState([]);
-//   const [currentSongIndex, setCurrentSongIndex] = useState(null);
-//   const [isPlaying, setIsPlaying] = useState(false);
 //   const audioRef = useRef(new Audio());
-//   const [currentTime, setCurrentTime] = useState(0);
-//   const [duration, setDuration] = useState(0);
-
 //   const API_BASE = "https://melody-mind-2.onrender.com";
 
-//   // Load songs from SongContext or localStorage
+//   // ---------- Load songs ----------
 //   useEffect(() => {
-//     if (uploadedSongs.length > 0) {
-//       setSongs(uploadedSongs);
-//     } else {
+//     if (uploadedSongs.length > 0) setSongs(uploadedSongs);
+//     else {
 //       const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
 //       setSongs(allSongs);
 //     }
 //   }, [uploadedSongs]);
 
-//   // Listen for favorites updates
+//   // ---------- Listen for favorites updates ----------
 //   useEffect(() => {
 //     const handleUpdate = () => {
 //       setFavorites(JSON.parse(localStorage.getItem("favorites") || "[]"));
@@ -199,20 +40,16 @@
 //     return () => window.removeEventListener("favoritesUpdated", handleUpdate);
 //   }, []);
 
-//   // Audio time updates and ended event
+//   // ---------- Audio events ----------
 //   useEffect(() => {
 //     const audio = audioRef.current;
+//     if (!audio) return;
+
 //     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
 //     const onLoadedMetadata = () => setDuration(audio.duration);
 //     const onEnded = () => {
-//       // Play next song when current song ends
-//       if (currentSongIndex < favoriteSongs.length - 1) {
-//         playSong(currentSongIndex + 1);
-//       } else {
-//         setIsPlaying(false);
-//         setCurrentSongIndex(null);
-//         setCurrentTime(0);
-//       }
+//       if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
+//       else setIsPlaying(false);
 //     };
 
 //     audio.addEventListener("timeupdate", onTimeUpdate);
@@ -224,59 +61,66 @@
 //       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
 //       audio.removeEventListener("ended", onEnded);
 //     };
-//   }, [currentSongIndex, favoriteSongs.length]); // Dependencies to update when song changes
+//   }, [currentSongIndex]);
+
+//   // ---------- Mood color ----------
+//   useEffect(() => {
+//     if (currentSongIndex !== null) {
+//       const mood = favoriteSongs[currentSongIndex]?.mood;
+//       const colors = {
+//         Happy: "#fff5e1",
+//         Sad: "#dbe8ff",
+//         Calm: "#e6fff7",
+//         Energetic: "#ffe6f2",
+//         Neutral: "#f2e6ff",
+//       };
+//       setBgColor(colors[mood] || "#f2f2f2");
+//     }
+//   }, [currentSongIndex]);
 
 //   const favoriteSongs = songs.filter((s) => favorites.includes(s.songId));
 
+//   // ---------- Play song ----------
 //   const playSong = async (index) => {
 //     const song = favoriteSongs[index];
-//     if (!song?.url) {
-//       alert("No valid URL for this song");
-//       return;
-//     }
-//     const songUrl = song.url.startsWith("/") ? `${API_BASE}${song.url}` : `${API_BASE}/${song.url}`;
+//     if (!song?.url) return alert("No valid URL for this song");
+
+//     const songUrl = song.url.startsWith("/")
+//       ? `${API_BASE}${song.url}`
+//       : `${API_BASE}/${song.url}`;
+
 //     audioRef.current.src = songUrl;
+//     audioRef.current.load();
 //     try {
 //       await audioRef.current.play();
 //       setIsPlaying(true);
 //       setCurrentSongIndex(index);
+//       setCurrentSong(song);
+//       setCurrentMood(song.mood);
 //     } catch (err) {
 //       console.error("Play song error:", err);
-//       alert("Failed to play song. Please try another.");
+//       alert("Failed to play song");
 //     }
 //   };
 
 //   const playPause = () => {
-//     const audio = audioRef.current;
-//     if (!audio.src) {
-//       alert("No song selected");
-//       return;
-//     }
+//     if (!audioRef.current.src) return;
 //     if (isPlaying) {
-//       audio.pause();
+//       audioRef.current.pause();
 //       setIsPlaying(false);
 //     } else {
-//       audio.play().then(() => setIsPlaying(true)).catch((err) => {
-//         console.error("Play error:", err);
-//         alert("Failed to play song. Please try another.");
-//       });
+//       audioRef.current.play().then(() => setIsPlaying(true));
 //     }
 //   };
 
 //   const nextSong = () => {
-//     if (currentSongIndex < favoriteSongs.length - 1) {
-//       playSong(currentSongIndex + 1);
-//     } else {
-//       alert("No next song available");
-//     }
+//     if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
+//     else alert("No next song");
 //   };
 
 //   const previousSong = () => {
-//     if (currentSongIndex > 0) {
-//       playSong(currentSongIndex - 1);
-//     } else {
-//       alert("No previous song available");
-//     }
+//     if (currentSongIndex > 0) playSong(currentSongIndex - 1);
+//     else alert("No previous song");
 //   };
 
 //   const removeFavorite = (songId) => {
@@ -291,34 +135,51 @@
 //     }
 //   };
 
+//   const saveNote = (songId, text) => {
+//     const updated = { ...notes, [songId]: text };
+//     setNotes(updated);
+//     localStorage.setItem("favoriteNotes", JSON.stringify(updated));
+//   };
+
+//   // ---------- Render ----------
 //   return (
-//     <div className="favorites-content">
+//     <div
+//       className="favorites-page"
+//       style={{
+//         backgroundColor: bgColor,
+//         transition: "0.8s all ease-in-out",
+//         minHeight: "100vh",
+//         padding: "20px",
+//       }}
+//     >
 //       <h2>❤ Your Favorites</h2>
-//       {favoriteSongs.length > 0 ? (
-//         <ul className="song-list">
-//           {favoriteSongs.map((song, index) => (
-//             <li key={song.songId} className="song-item">
-//               <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-//                 <div>
-//                   <h4>{song.title}</h4>
-//                   <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
-//                 </div>
-//                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-//                   <button onClick={() => playSong(index)}>
-//                     {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
-//                   </button>
-//                   <FaHeart
-//                     style={{ cursor: "pointer", color: "red" }}
-//                     onClick={() => removeFavorite(song.songId)}
-//                   />
-//                 </div>
-//               </div>
-//             </li>
-//           ))}
-//         </ul>
-//       ) : (
-//         <p>No favorite songs yet.</p>
-//       )}
+//       {favoriteSongs.length === 0 && <p>No favorites yet.</p>}
+
+//       <div className="favorites-grid">
+//         {favoriteSongs.map((song, index) => (
+//           <div key={song.songId} className="song-card">
+//             <div className="song-header">
+//               <h4>{song.title}</h4>
+//               <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
+//             </div>
+//             <div className="song-controls">
+//               <button onClick={() => playSong(index)}>
+//                 {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
+//               </button>
+//               <FaHeart
+//                 style={{ color: "red", cursor: "pointer" }}
+//                 onClick={() => removeFavorite(song.songId)}
+//               />
+//             </div>
+//             <textarea
+//               className="note-area"
+//               placeholder="Write your memory or note..."
+//               value={notes[song.songId] || ""}
+//               onChange={(e) => saveNote(song.songId, e.target.value)}
+//             />
+//           </div>
+//         ))}
+//       </div>
 
 //       {currentSongIndex !== null && (
 //         <div className="playerbar">
@@ -357,10 +218,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaHeart } from "react-icons/fa";
 import { useSong } from "../context/SongContext.jsx";
-import "./Favorites.css"; // add gradient cards, hover, scroll styles
 
 export default function Favorites() {
-  const { uploadedSongs, setCurrentSong, setCurrentMood } = useSong();
+  const { uploadedSongs } = useSong();
   const [favorites, setFavorites] = useState(
     JSON.parse(localStorage.getItem("favorites") || "[]")
   );
@@ -369,24 +229,25 @@ export default function Favorites() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [notes, setNotes] = useState(
-    JSON.parse(localStorage.getItem("favoriteNotes") || "{}")
-  );
-  const [bgColor, setBgColor] = useState("#f2f2f2");
-
+  const [selectedMoodFilter, setSelectedMoodFilter] = useState("All");
+  const [selectedGenreFilter, setSelectedGenreFilter] = useState("All");
   const audioRef = useRef(new Audio());
   const API_BASE = "https://melody-mind-2.onrender.com";
 
-  // ---------- Load songs ----------
+  const moods = ["All", "Happy", "Sad", "Calm", "Energetic", "Neutral"];
+  const genres = ["All", "Pop", "Rock", "Jazz", "Classical", "Hip-Hop"];
+
+  // Load songs from context or localStorage
   useEffect(() => {
-    if (uploadedSongs.length > 0) setSongs(uploadedSongs);
-    else {
+    if (uploadedSongs.length > 0) {
+      setSongs(uploadedSongs);
+    } else {
       const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
       setSongs(allSongs);
     }
   }, [uploadedSongs]);
 
-  // ---------- Listen for favorites updates ----------
+  // Listen for favorites updates
   useEffect(() => {
     const handleUpdate = () => {
       setFavorites(JSON.parse(localStorage.getItem("favorites") || "[]"));
@@ -395,17 +256,14 @@ export default function Favorites() {
     return () => window.removeEventListener("favoritesUpdated", handleUpdate);
   }, []);
 
-  // ---------- Audio events ----------
+  // Audio events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onLoadedMetadata = () => setDuration(audio.duration);
-    const onEnded = () => {
-      if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
-      else setIsPlaying(false);
-    };
+    const onEnded = () => nextSong();
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
@@ -418,64 +276,47 @@ export default function Favorites() {
     };
   }, [currentSongIndex]);
 
-  // ---------- Mood color ----------
-  useEffect(() => {
-    if (currentSongIndex !== null) {
-      const mood = favoriteSongs[currentSongIndex]?.mood;
-      const colors = {
-        Happy: "#fff5e1",
-        Sad: "#dbe8ff",
-        Calm: "#e6fff7",
-        Energetic: "#ffe6f2",
-        Neutral: "#f2e6ff",
-      };
-      setBgColor(colors[mood] || "#f2f2f2");
-    }
-  }, [currentSongIndex]);
+  const favoriteSongs = songs
+    .filter((s) => favorites.includes(s.songId))
+    .filter((s) => selectedMoodFilter === "All" || s.mood === selectedMoodFilter)
+    .filter((s) => selectedGenreFilter === "All" || s.genre === selectedGenreFilter);
 
-  const favoriteSongs = songs.filter((s) => favorites.includes(s.songId));
-
-  // ---------- Play song ----------
   const playSong = async (index) => {
     const song = favoriteSongs[index];
-    if (!song?.url) return alert("No valid URL for this song");
+    if (!song?.url) return alert("No URL found for this song");
 
-    const songUrl = song.url.startsWith("/")
+    audioRef.current.src = song.url.startsWith("/")
       ? `${API_BASE}${song.url}`
       : `${API_BASE}/${song.url}`;
 
-    audioRef.current.src = songUrl;
-    audioRef.current.load();
     try {
       await audioRef.current.play();
       setIsPlaying(true);
       setCurrentSongIndex(index);
-      setCurrentSong(song);
-      setCurrentMood(song.mood);
     } catch (err) {
-      console.error("Play song error:", err);
+      console.error("Play error:", err);
       alert("Failed to play song");
     }
   };
 
   const playPause = () => {
-    if (!audioRef.current.src) return;
+    const audio = audioRef.current;
+    if (!audio.src) return;
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play().then(() => setIsPlaying(true));
+      audio.play().then(() => setIsPlaying(true)).catch(console.error);
     }
   };
 
   const nextSong = () => {
     if (currentSongIndex < favoriteSongs.length - 1) playSong(currentSongIndex + 1);
-    else alert("No next song");
+    else setIsPlaying(false);
   };
 
   const previousSong = () => {
     if (currentSongIndex > 0) playSong(currentSongIndex - 1);
-    else alert("No previous song");
   };
 
   const removeFavorite = (songId) => {
@@ -490,83 +331,87 @@ export default function Favorites() {
     }
   };
 
-  const saveNote = (songId, text) => {
-    const updated = { ...notes, [songId]: text };
-    setNotes(updated);
-    localStorage.setItem("favoriteNotes", JSON.stringify(updated));
-  };
-
-  // ---------- Render ----------
   return (
-    <div
-      className="favorites-page"
-      style={{
-        backgroundColor: bgColor,
-        transition: "0.8s all ease-in-out",
-        minHeight: "100vh",
-        padding: "20px",
-      }}
-    >
-      <h2>❤ Your Favorites</h2>
-      {favoriteSongs.length === 0 && <p>No favorites yet.</p>}
+    <div className="favorites-page">
+      <div className="favorites-left">
+        <h2>❤ Your Favorites</h2>
 
-      <div className="favorites-grid">
-        {favoriteSongs.map((song, index) => (
-          <div key={song.songId} className="song-card">
-            <div className="song-header">
-              <h4>{song.title}</h4>
-              <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
-            </div>
-            <div className="song-controls">
-              <button onClick={() => playSong(index)}>
-                {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
-              </button>
-              <FaHeart
-                style={{ color: "red", cursor: "pointer" }}
-                onClick={() => removeFavorite(song.songId)}
-              />
-            </div>
-            <textarea
-              className="note-area"
-              placeholder="Write your memory or note..."
-              value={notes[song.songId] || ""}
-              onChange={(e) => saveNote(song.songId, e.target.value)}
-            />
-          </div>
-        ))}
+        {favoriteSongs.length > 0 ? (
+          <ul className="song-list">
+            {favoriteSongs.map((song, index) => (
+              <li key={song.songId} className="song-card">
+                <div className="song-info">
+                  <h4>{song.title}</h4>
+                  <p>{song.artist} | {song.genre} | Mood: {song.mood}</p>
+                </div>
+                <div className="song-actions">
+                  <button onClick={() => playSong(index)}>
+                    {isPlaying && currentSongIndex === index ? <FaPause /> : <FaPlay />}
+                  </button>
+                  <FaHeart className="heart-icon" onClick={() => removeFavorite(song.songId)} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No favorite songs yet. ❤️</p>
+        )}
       </div>
 
-      {currentSongIndex !== null && (
-        <div className="playerbar">
-          <div className="playerbar-info">
-            <h4>{favoriteSongs[currentSongIndex].title}</h4>
-            <p>{favoriteSongs[currentSongIndex].artist}</p>
-          </div>
-
-          <div className="progress-container">
-            <div
-              className="progress-fill"
-              style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-            ></div>
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={(e) => {
-                audioRef.current.currentTime = e.target.value;
-                setCurrentTime(e.target.value);
-              }}
-            />
-          </div>
-
-          <div className="playerbar-controls">
-            <button onClick={previousSong}><FaStepBackward /></button>
-            <button onClick={playPause}>{isPlaying ? <FaPause /> : <FaPlay />}</button>
-            <button onClick={nextSong}><FaStepForward /></button>
+      <div className="favorites-right">
+        {/* Mood Filters */}
+        <div className="filter-box">
+          <h3>Filter by Mood</h3>
+          <div className="filter-buttons">
+            {moods.map((m) => (
+              <button
+                key={m}
+                className={selectedMoodFilter === m ? "active" : ""}
+                onClick={() => setSelectedMoodFilter(m)}
+              >
+                {m}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Genre Filters */}
+        <div className="filter-box">
+          <h3>Filter by Genre</h3>
+          <div className="filter-buttons">
+            {genres.map((g) => (
+              <button
+                key={g}
+                className={selectedGenreFilter === g ? "active" : ""}
+                onClick={() => setSelectedGenreFilter(g)}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Now Playing Preview */}
+        {currentSongIndex !== null && (
+          <div className="now-playing-box">
+            <h3>Now Playing</h3>
+            <div className="album-art">{/* Optional album art image */}</div>
+            <h4>{favoriteSongs[currentSongIndex].title}</h4>
+            <p>{favoriteSongs[currentSongIndex].artist}</p>
+            <div className="progress-bar-container">
+              <div
+                className="progress-fill"
+                style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
+              ></div>
+            </div>
+            <div className="player-controls">
+              <button onClick={previousSong}><FaStepBackward /></button>
+              <button onClick={playPause}>{isPlaying ? <FaPause /> : <FaPlay />}</button>
+              <button onClick={nextSong}><FaStepForward /></button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
