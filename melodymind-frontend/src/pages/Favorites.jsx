@@ -195,8 +195,10 @@
 // }
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaHeart } from "react-icons/fa";
+import { useSong } from "../context/SongContext.jsx";
 
 export default function Favorites() {
+  const { uploadedSongs } = useSong(); // Use SongContext to get songs
   const [favorites, setFavorites] = useState(
     JSON.parse(localStorage.getItem("favorites") || "[]")
   );
@@ -207,11 +209,18 @@ export default function Favorites() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Load all songs from localStorage (or get from parent if you pass props)
+  const API_BASE = "https://melody-mind-2.onrender.com"; // Added to match Home.jsx
+
+  // Load songs from SongContext instead of localStorage
   useEffect(() => {
-    const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
-    setSongs(allSongs);
-  }, []);
+    if (uploadedSongs.length > 0) {
+      setSongs(uploadedSongs);
+    } else {
+      // Fallback to localStorage if context is empty
+      const allSongs = JSON.parse(localStorage.getItem("allSongs") || "[]");
+      setSongs(allSongs);
+    }
+  }, [uploadedSongs]);
 
   // Listen for favorites updates
   useEffect(() => {
@@ -242,10 +251,14 @@ export default function Favorites() {
   const playSong = async (index) => {
     const song = favoriteSongs[index];
     if (!song?.url) return;
-    audioRef.current.src = song.url;
-    await audioRef.current.play();
-    setIsPlaying(true);
-    setCurrentSongIndex(index);
+    audioRef.current.src = `${API_BASE}${song.url}`; // Prefix URL with API_BASE
+    try {
+      await audioRef.current.play();
+      setIsPlaying(true);
+      setCurrentSongIndex(index);
+    } catch (err) {
+      console.error("Play song error:", err);
+    }
   };
 
   const playPause = () => {
@@ -255,7 +268,7 @@ export default function Favorites() {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play().then(() => setIsPlaying(true));
+      audio.play().then(() => setIsPlaying(true)).catch((err) => console.error("Play error:", err));
     }
   };
 
@@ -267,9 +280,8 @@ export default function Favorites() {
     if (currentSongIndex > 0) playSong(currentSongIndex - 1);
   };
 
-  // NEW: Unfavorite function
   const removeFavorite = (songId) => {
-    const updatedFavorites = favorites.filter(id => id !== songId);
+    const updatedFavorites = favorites.filter((id) => id !== songId);
     localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
     window.dispatchEvent(new Event("favoritesUpdated"));
     // Reset player if current song was unfavorited
