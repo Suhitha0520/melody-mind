@@ -227,24 +227,33 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #121212, #1a1a1a); /* Dark gradient like Spotify */
+  background: linear-gradient(135deg, #121212, #1a1a1a); /* Dark gradient */
   min-height: 100vh;
   font-family: 'Poppins', sans-serif; /* Modern typography */
   color: #e0e0e0;
+  max-width: 1200px; /* Cap width for better control */
+  margin: 0 auto; /* Center the layout */
+}
+
+/* Left and Right Panels */
+.favorites-left,
+.favorites-right {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ensure full height alignment */
 }
 
 .favorites-left {
-  flex: 2;
+  flex: 2; /* Twice the width of right panel */
+  min-height: 600px; /* Minimum height to avoid collapse */
 }
 
 .favorites-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  flex: 1; /* Half the width of left panel */
+  min-height: 600px; /* Match left panel */
   position: sticky;
   top: 20px;
-  height: fit-content;
+  align-self: flex-start; /* Align to top */
 }
 
 /* Song List and Cards */
@@ -253,6 +262,7 @@
   flex-direction: column;
   gap: 15px;
   list-style: none;
+  flex-grow: 1; /* Fill available space */
 }
 
 .song-card {
@@ -286,7 +296,7 @@
 
 /* Song Actions */
 .song-actions button {
-  background: #1db954; /* Spotify green accent */
+  background: #1db954;
   border: none;
   padding: 10px;
   border-radius: 50%;
@@ -320,6 +330,9 @@
   padding: 15px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-grow: 1; /* Ensure it takes available space */
+  max-height: 300px; /* Limit height to prevent overflow */
+  overflow-y: auto; /* Scroll if needed */
 }
 
 .filter-box h3 {
@@ -361,6 +374,8 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   text-align: center;
   animation: fadeIn 0.5s ease;
+  flex-grow: 1; /* Fill remaining space */
+  min-height: 300px; /* Ensure it doesn’t collapse */
 }
 
 @keyframes fadeIn {
@@ -368,16 +383,10 @@
   to { opacity: 1; }
 }
 
-.now-playing-box h3 {
-  margin: 0 0 10px;
-  font-size: 16px;
-  color: #fff;
-}
-
 .album-art {
   width: 100%;
   height: 180px;
-  background: linear-gradient(135deg, #1db954, #2ecc71); /* Green gradient as placeholder */
+  background: linear-gradient(135deg, #1db954, #2ecc71);
   border-radius: 12px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -391,7 +400,6 @@
   100% { transform: scale(1); }
 }
 
-/* Visualizer Effect (Simple Bars) */
 .album-art::before {
   content: '';
   position: absolute;
@@ -463,4 +471,36 @@
 .player-controls button:hover {
   background: #1ed760;
   transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .favorites-page {
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  .favorites-left,
+  .favorites-right {
+    flex: auto;
+    position: static;
+    min-height: auto;
+  }
+
+  .filter-box,
+  .now-playing-box {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .song-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .song-actions {
+    display: flex;
+    gap: 10px;
+  }
 }
