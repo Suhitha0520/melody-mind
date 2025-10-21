@@ -283,19 +283,16 @@ export default function Favorites() {
 
   const playSong = async (index) => {
     const song = favoriteSongs[index];
-    if (!song?.url) return alert("No URL found for this song");
-
+    if (!song?.url) return;
     audioRef.current.src = song.url.startsWith("/")
       ? `${API_BASE}${song.url}`
       : `${API_BASE}/${song.url}`;
-
     try {
       await audioRef.current.play();
       setIsPlaying(true);
       setCurrentSongIndex(index);
     } catch (err) {
       console.error("Play error:", err);
-      alert("Failed to play song");
     }
   };
 
@@ -331,11 +328,24 @@ export default function Favorites() {
     }
   };
 
+  // Dynamic album art background based on mood
+  const getAlbumArtStyle = (mood) => {
+    const moodColors = {
+      Happy: "#ffeb3b",
+      Sad: "#2196f3",
+      Calm: "#9c27b0",
+      Energetic: "#f44336",
+      Neutral: "#607d8b",
+    };
+    return {
+      background: moodColors[mood] ? `linear-gradient(135deg, ${moodColors[mood]}, #1db954)` : "linear-gradient(135deg, #1db954, #2ecc71)",
+    };
+  };
+
   return (
     <div className="favorites-page">
       <div className="favorites-left">
         <h2>❤ Your Favorites</h2>
-
         {favoriteSongs.length > 0 ? (
           <ul className="song-list">
             {favoriteSongs.map((song, index) => (
@@ -357,9 +367,7 @@ export default function Favorites() {
           <p>No favorite songs yet. ❤️</p>
         )}
       </div>
-
       <div className="favorites-right">
-        {/* Mood Filters */}
         <div className="filter-box">
           <h3>Filter by Mood</h3>
           <div className="filter-buttons">
@@ -374,8 +382,6 @@ export default function Favorites() {
             ))}
           </div>
         </div>
-
-        {/* Genre Filters */}
         <div className="filter-box">
           <h3>Filter by Genre</h3>
           <div className="filter-buttons">
@@ -390,19 +396,20 @@ export default function Favorites() {
             ))}
           </div>
         </div>
-
-        {/* Now Playing Preview */}
         {currentSongIndex !== null && (
           <div className="now-playing-box">
             <h3>Now Playing</h3>
-            <div className="album-art">{/* Optional album art image */}</div>
+            <div
+              className="album-art"
+              style={getAlbumArtStyle(favoriteSongs[currentSongIndex]?.mood)}
+            />
             <h4>{favoriteSongs[currentSongIndex].title}</h4>
             <p>{favoriteSongs[currentSongIndex].artist}</p>
             <div className="progress-bar-container">
               <div
                 className="progress-fill"
                 style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-              ></div>
+              />
             </div>
             <div className="player-controls">
               <button onClick={previousSong}><FaStepBackward /></button>
